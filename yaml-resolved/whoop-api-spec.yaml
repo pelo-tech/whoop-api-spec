@@ -1,0 +1,594 @@
+openapi: 3.0.0
+info:
+  title: Unofficial Whoop API
+  description: This is an unofficial and unsupported API for Whoop that's been discovered
+    and documented. It's not entirely complete, but it already has some useful functionality
+    as it continues to evolve.  The first thing you're going to need is your OAuth
+    token, which you can obtain by sending the /oath/token authentication request
+    described in this document.
+  version: 1.0.0
+servers:
+- url: https://api-7.whoop.com
+paths:
+  /users/{userId}:
+    get:
+      tags:
+      - users
+      summary: Get User Profile
+      description: Get User Profile by ID
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 238633
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+      security:
+      - bearerAuth: []
+  /users/{userId}/cycles:
+    get:
+      tags:
+      - metrics
+      summary: Get daily cycle data on a given date range
+      description: This will get the strain/recovery/sleep/workout data for a given
+        user over a specific date range.
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 238633
+      - name: start
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: date-time
+          example: 2020-08-01T01:30:00Z
+      - name: end
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: date-time
+          example: 2020-08-01T02:30:00Z
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cycle'
+      security:
+      - bearerAuth: []
+  /users/{userId}/metrics/heart_rate:
+    get:
+      tags:
+      - metrics
+      summary: Get HeartRate for a date range
+      description: Gets heartrate data in granularity of every 6, 60, or 600 seconds
+        for a given date/time range. This is a slow request, so you should keep the
+        date range tight
+      parameters:
+      - name: sort
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        example: t
+      - name: step
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+          default: 60
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 238633
+      - name: start
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: date-time
+          example: 2020-08-01T01:30:00Z
+      - name: end
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: date-time
+          example: 2020-08-01T02:30:00Z
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeartRateDataSet'
+      security:
+      - bearerAuth: []
+  /oauth/token:
+    post:
+      tags:
+      - auth
+      summary: Get or Refresh OAuth Token
+      description: "Obtain OAuth token based on password grant type,and make it refreshable\
+        \ by getting a refresh token as well, or refresh the token by supplying a\
+        \ refresh_token.\n  example payloads, are, for password auth:\n   <pre>\n\
+        \   { \n     \"username\": \"email@addr\", \n     \"password\": \"pass\",\
+        \ \n     \"grant_type\": \"password\", \n     \"issueRefresh\": true\n  }\n\
+        \   </pre> or, to refresh\n   <pre>\n    {\n      \"refresh_token\": \"your_refresh_token\"\
+        , \n      \"grant_type\": \"refresh_token\"\n    }\n   </pre>"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body'
+      responses:
+        "200":
+          description: OAuth Token Object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResult'
+components:
+  schemas:
+    PasswordAuthRequest:
+      properties:
+        username:
+          type: string
+          description: Your email address
+          example: email@address.com
+        password:
+          type: string
+          example: your_password
+        grant_type:
+          type: string
+          example: password
+          default: password
+        issueRefresh:
+          type: boolean
+          example: true
+          default: true
+    RefreshTokenRequest:
+      properties:
+        grant_type:
+          type: string
+          example: refresh_token
+          default: refresh_token
+        refresh_token:
+          type: string
+          example: your-refresh-token
+    AuthResult:
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          format: int32
+        membership_status:
+          type: string
+          example: active
+        needsProfileCompletion:
+          type: string
+          example: "0"
+        token_type:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      properties:
+        id:
+          type: integer
+          format: int32
+        avatarUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        firstName:
+          type: string
+        lastName:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        adminDivision:
+          type: string
+        fullName:
+          type: string
+        teams:
+          type: array
+        preferences:
+          type: object
+        email:
+          type: string
+        username:
+          type: string
+        privacyProfile:
+          type: object
+        profile:
+          $ref: '#/components/schemas/Profile'
+    Profile:
+      properties:
+        userId:
+          type: integer
+          format: int32
+        bioDataId:
+          type: integer
+          format: int32
+        height:
+          type: number
+          description: height in meters
+          format: float
+        weight:
+          type: number
+          description: weight in kg
+          format: float
+        birthday:
+          type: string
+          format: date-time
+        gender:
+          type: string
+        unitSystem:
+          type: string
+          example: imperial
+        fitnessLevel:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        timezoneOffset:
+          type: string
+          example: +0300
+        id:
+          type: integer
+          format: int32
+        maxHeartRate:
+          type: integer
+          format: int32
+        minHeartRate:
+          type: integer
+          format: int32
+        avgHeartRate:
+          type: number
+          format: float
+        kilojoules:
+          type: number
+          format: float
+        canUploadData:
+          type: boolean
+          example: true
+          default: true
+    MetricDataSet:
+      properties:
+        name:
+          type: string
+          example: heart_rate
+        start:
+          type: integer
+          format: int64
+    HeartRateDataSet:
+      allOf:
+      - $ref: '#/components/schemas/MetricDataSet'
+      - type: object
+        properties:
+          values:
+            type: array
+            items:
+              $ref: '#/components/schemas/HeartRateDataSet_values'
+    Cycle:
+      properties:
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        during:
+          $ref: '#/components/schemas/TimeSpan'
+        id:
+          type: integer
+          format: int32
+        lastUpdatedAt:
+          type: string
+          format: date-time
+        predictedEnd:
+          type: string
+          format: date-time
+        recovery:
+          $ref: '#/components/schemas/Recovery'
+        sleep:
+          $ref: '#/components/schemas/SleepSummary'
+        strain:
+          $ref: '#/components/schemas/StrainSummary'
+    Recovery:
+      properties:
+        blackoutUntil:
+          type: string
+        calibrating:
+          type: boolean
+        heartRateVariabilityRmssd:
+          type: number
+          format: float
+        id:
+          type: integer
+          format: int32
+        responded:
+          type: boolean
+        restingHeartRate:
+          type: integer
+          format: int32
+        score:
+          type: integer
+          format: int32
+        state:
+          type: string
+          example: complete
+        surveyResponseId:
+          type: integer
+          format: int32
+        timestamp:
+          type: string
+          format: date-time
+    SleepSummary:
+      properties:
+        id:
+          type: integer
+          format: int32
+        naps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sleep'
+        needBreakdown:
+          $ref: '#/components/schemas/SleepNeedsBreakdown'
+        qualityDuration:
+          type: integer
+          format: int32
+        score:
+          type: integer
+          format: int32
+        sleeps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sleep'
+        state:
+          type: string
+          example: complete
+    Sleep:
+      properties:
+        cyclesCount:
+          type: integer
+          format: int32
+        disturbanceCount:
+          type: integer
+          format: int32
+        during:
+          $ref: '#/components/schemas/TimeSpan'
+        id:
+          type: integer
+          format: int32
+        inBedDuration:
+          type: integer
+          format: int32
+        isNap:
+          type: boolean
+        latencyDuration:
+          type: integer
+          format: int32
+        noDataDuration:
+          type: integer
+          format: int32
+        qualityDuration:
+          type: integer
+          format: int32
+        remSleepDuration:
+          type: integer
+          format: int32
+        respiratoryRate:
+          type: number
+          format: float
+        responded:
+          type: boolean
+        score:
+          type: integer
+          format: int32
+        sleepConsistency:
+          type: integer
+          format: int32
+        sleepEfficiency:
+          type: number
+          format: float
+        slowWaveSleepDuration:
+          type: integer
+          format: int32
+        source:
+          type: string
+          example: user
+        state:
+          type: string
+          example: complete
+        surveyResponseId:
+          type: integer
+          format: int64
+        timezoneOffset:
+          type: string
+          example: +300
+        wakeDuration:
+          type: integer
+          format: int32
+    SleepNeedsBreakdown:
+      properties:
+        baseline:
+          type: integer
+          format: int32
+        debt:
+          type: integer
+          format: int32
+        naps:
+          type: integer
+          format: int32
+        strain:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int32
+    TimeSpan:
+      properties:
+        bounds:
+          type: string
+          example: '[)'
+        lower:
+          type: string
+          format: date-time
+        upper:
+          type: string
+          format: date-time
+    StrainSummary:
+      properties:
+        averageHeartRate:
+          type: integer
+          format: int32
+        kilojoules:
+          type: number
+          format: float
+        maxHeartRate:
+          type: integer
+          format: int32
+        rawScore:
+          type: number
+          format: double
+        score:
+          type: number
+          format: double
+        state:
+          type: string
+          example: complete
+        workouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workout'
+    Workout:
+      properties:
+        altitudeChange:
+          type: string
+          description: this might need to change, I only see null in responses
+        altitudeGain:
+          type: string
+          description: this might need to change, I only see null in responses
+        averageHeartRate:
+          type: integer
+          format: int32
+        cumulativeWorkoutStrain:
+          type: number
+          format: float
+        distance:
+          type: number
+          format: float
+        during:
+          $ref: '#/components/schemas/TimeSpan'
+        gpsEnabled:
+          type: boolean
+        id:
+          type: integer
+          format: int32
+        kilojoules:
+          type: number
+          format: float
+        maxHeartRate:
+          type: integer
+          format: int32
+        rawScore:
+          type: number
+          format: double
+        responded:
+          type: boolean
+        score:
+          type: number
+          format: double
+        source:
+          type: string
+          example: user
+        sportId:
+          type: integer
+          format: int32
+          example: 1
+        state:
+          type: string
+          example: complete
+        surveyResponseId:
+          type: integer
+          format: int32
+        timezoneOffset:
+          type: string
+          example: +0300
+        zones:
+          type: array
+          items:
+            type: integer
+            format: int32
+    body:
+      oneOf:
+      - $ref: '#/components/schemas/PasswordAuthRequest'
+      - $ref: '#/components/schemas/RefreshTokenRequest'
+    HeartRateDataSet_values:
+      type: object
+      properties:
+        data:
+          type: integer
+          description: heart rate
+          format: int32
+        time:
+          type: integer
+          description: timestamp in millis
+          format: int64
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
