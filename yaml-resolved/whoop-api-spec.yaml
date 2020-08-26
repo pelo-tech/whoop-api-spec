@@ -6,7 +6,7 @@ info:
     as it continues to evolve.  The first thing you're going to need is your OAuth
     token, which you can obtain by sending the /oath/token authentication request
     described in this document.
-  version: 1.0.0
+  version: 1.0.1
 servers:
 - url: https://api-7.whoop.com
 paths:
@@ -26,6 +26,16 @@ paths:
           type: integer
           format: int32
           default: 238633
+      - name: include
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+            example: '["profile","teams"]'
       responses:
         "200":
           description: OK
@@ -160,6 +170,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/body'
+            examples:
+              Password:
+                value:
+                  username: email@addr
+                  password: myPassword
+                  grant_type: password
+                  issueRefresh: true
+              Refresh:
+                value:
+                  refresh_token: myRefreshToken
+                  grant_type: refresh_token
       responses:
         "200":
           description: OAuth Token Object
@@ -167,6 +188,198 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResult'
+  /sports:
+    get:
+      tags:
+      - reference data
+      summary: list of activities types
+      description: Gets the entire list of supported activity types on the whoop platform
+      responses:
+        "200":
+          description: Array of activity types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityType'
+  /voice-of-whoop:
+    post:
+      tags:
+      - user interface
+      summary: Get the little text blurb that's displayed on the app
+      description: Get a text statement for the given data set/type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/body_1'
+      responses:
+        "200":
+          description: Voice of Whoop
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+  /users/{userId}/sleeps/{sleepId}:
+    get:
+      tags:
+      - details
+      description: Get individual sleep details
+      parameters:
+      - name: sleepId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 93802122
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 238633
+      responses:
+        "200":
+          description: Sleep details
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth: []
+  /users/{userId}/sleeps/{sleepId}/survey-response:
+    get:
+      tags:
+      - details
+      - surveys
+      description: 'Get Survey Response for sleep '
+      parameters:
+      - name: sleepId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 93802122
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 238633
+      responses:
+        "200":
+          description: Survey Response for Sleep
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth: []
+  /users/{userId}/workouts/{workoutId}/survey-response:
+    get:
+      tags:
+      - details
+      - surveys
+      description: 'Get Survey Response for a workout '
+      parameters:
+      - name: workoutId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 93848982
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 238633
+      responses:
+        "200":
+          description: Survey Response for a workout
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth: []
+  /users/{userId}/workouts/{workoutId}:
+    get:
+      tags:
+      - details
+      description: 'Get details of a workout '
+      parameters:
+      - name: workoutId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 93848982
+      - name: userId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+        example: 238633
+      responses:
+        "200":
+          description: Details for a workout
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth: []
+  /reports/performance-optimization:
+    get:
+      tags:
+      - reports
+      description: 'Get Weekly Performance Summary for the current user '
+      parameters:
+      - name: until
+        in: query
+        description: Seems to be a date of a Sunday
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: date
+        example: 2020-08-23
+      responses:
+        "200":
+          description: Weekly performance assessment
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+      - bearerAuth: []
 components:
   schemas:
     PasswordAuthRequest:
@@ -573,10 +786,206 @@ components:
           items:
             type: integer
             format: int32
+    VoiceOfWhoop:
+      properties:
+        bodyText:
+          type: string
+          example: Your RHR is in the normal range. This indicates that your body
+            is rested.
+        flags:
+          type: object
+          example:
+            showCoachVow: true
+        header:
+          type: string
+          example: Body is rested.
+        highlights:
+          type: object
+          description: some subset of these might be found in the highlights value,
+            or it could be an empty object.  The keys here seem to be unique, where
+            'd' seems to represent dashboard, and 's' seems to represent statistic.
+            The example contains most values that have been discovered across various
+            calls to the API. There's markup possible in the value of bodyText such
+            as [d1|Some text] which converts it to a hyperlink that highlights (in
+            red) the piece of data displayed on the screen when hovering over it.
+          example:
+            p1:
+              metricName: sws
+              type: sleep_stage
+            d0:
+              metricName: sleep_performance
+              type: dashboard
+            d1:
+              metricName: quality_duration
+              type: dashboard
+            s1:
+              metricName: distrubances
+              type: statistic
+            s3:
+              metricName: latency
+              type: statistic
+            s4:
+              metricName: sleep_eed
+              type: statistic
+            s5:
+              metricName: debt
+              type: statistic
+            s7:
+              metricName: recent_strain
+              type: statistic
+        secondsPositions:
+          type: array
+        whoop:
+          type: string
+          description: This seems to be the same as the BodyText
+          example: Your RHR is in the normal range. This indicates that your body
+            is rested.
+    VoiceOfWhoopCycle:
+      properties:
+        flags:
+          type: object
+        baseline:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        hoursOfSleep:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        naps:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        recentStrain:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        sleepDebt:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        sleepDisturbances:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        sleepLatency:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        sleepNeed:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        sleepPerformanceScore:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+        timeInBed:
+          $ref: '#/components/schemas/VoiceOfWhoop'
+      description: Multiple voice of whoops to cover an entire cycle's worth of data
+    VoiceTargetData:
+      type: object
+    VoiceActivitySpan:
+      allOf:
+      - $ref: '#/components/schemas/VoiceTargetData'
+      - type: object
+        properties:
+          activityId:
+            type: integer
+            format: int32
+          prevActivityId:
+            type: integer
+            format: int32
+    VoiceCycleSpan:
+      allOf:
+      - $ref: '#/components/schemas/VoiceTargetData'
+      - type: object
+        properties:
+          cycleId:
+            type: integer
+            format: int32
+          prevCycleId:
+            type: integer
+            format: int32
+    VoiceSingleCycle:
+      allOf:
+      - $ref: '#/components/schemas/VoiceTargetData'
+      - type: object
+        properties:
+          cycleId:
+            type: integer
+            format: int32
+    VoiceSingleActivity:
+      allOf:
+      - $ref: '#/components/schemas/VoiceTargetData'
+      - type: object
+        properties:
+          activityId:
+            type: integer
+            format: int32
+    VoiceTimeSpan:
+      allOf:
+      - $ref: '#/components/schemas/VoiceTargetData'
+      - type: object
+        properties:
+          until:
+            type: string
+            format: date
+            example: 2020-08-25
+          duration:
+            type: string
+            example: 1w,2w,1m,3m,6m
+    ActivityType:
+      properties:
+        id:
+          type: integer
+          format: int32
+          example: 84
+        named:
+          type: string
+          example: Jumping Rope
+        createdAt:
+          type: string
+          format: date-time
+          example: 2019-08-16T22:50:09.178Z
+        updatedAt:
+          type: string
+          format: date-time
+          example: 2019-08-16T22:50:14.814Z
+        hasGps:
+          type: boolean
+          example: false
+        iconUrl:
+          type: string
+          example: https://s3-us-west-2.amazonaws.com/icons.whoop.com/mobile/activities/jumping_rope.png
+        isCurrent:
+          type: boolean
+          example: true
+        hasSurvey:
+          type: boolean
+          example: true
+        category:
+          type: string
+          example: cardiovascular|non-cardiovascular
+      description: Type of activity on the whoop platform
     body:
       oneOf:
       - $ref: '#/components/schemas/PasswordAuthRequest'
       - $ref: '#/components/schemas/RefreshTokenRequest'
+    body_1:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: user ID
+          format: int32
+          example: 238633
+        viewId:
+          type: integer
+          description: seems to also be a user ID
+          format: int32
+          example: 238633
+        targetData:
+          example:
+            comment: Delete this comment. Either supply cycleId/prevCycleId, or activityId/prevActivity
+              pair Either supply pair of cycles or pair of activities
+            cycleId: 56789
+            prevCycleId: 1234
+          oneOf:
+          - $ref: '#/components/schemas/VoiceCycleSpan'
+          - $ref: '#/components/schemas/VoiceActivitySpan'
+          - $ref: '#/components/schemas/VoiceSingleCycle'
+          - $ref: '#/components/schemas/VoiceTimeSpan'
+          - $ref: '#/components/schemas/VoiceSingleActivity'
+        pillar:
+          type: string
+          example: recovery
+    inline_response_200:
+      oneOf:
+      - $ref: '#/components/schemas/VoiceOfWhoop'
+      - $ref: '#/components/schemas/VoiceOfWhoopCycle'
     HeartRateDataSet_values:
       type: object
       properties:
