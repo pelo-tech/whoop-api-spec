@@ -4,7 +4,7 @@ servers:
   - url: "https://api-7.whoop.com"
   - url: "https://api.dev.whoop.com"
 info:
-  version: 2.0.0
+  version: 2.0.1
   title: Unofficial Whoop API
   description: >-
     This is an unofficial and unsupported API for Whoop that's been discovered and documented. This is a BREAKING CHANGE from 1.x - Cycles,  Workouts, Recoveries, all use different field names, and formats, using activity-service/v1 and vow-service/v1 instead of other endpoints.  As such, older services have been removed from documentation to avoid confusion, even if they still workl.   It's not entirely complete, but it already has some useful functionality as it continues to evolve.  The first thing you're going to need is your OAuth token, which you can obtain by sending the /oath/token authentication request described in this document.
@@ -789,6 +789,13 @@ components:
         id:
           type: "integer"
           format: "int32"
+        date:
+          type: "string"
+          format: "date-time"
+          example: "2022-01-11T02:56:19.143+0000"
+        calibrating:
+          type: "boolean"
+          example: false
         created_at:
           type: "string"
           format: "date-time"
@@ -826,17 +833,20 @@ components:
           type: "string"
           example: "complete"
         prob_covid:
-          type: "string"
-          description: "this is null so cannot tell"
+          type: "number"
+          format: "double"
+          description: "0.11581755429506302"
         hr_baseline:
           type: "integer"
           format: "int32"
         skin_temp_celsius:
-          type: "integer"
-          format: "int32"  
+          type: "number"
+          format: "float" 
+          example: 32.4
         spo2:
-          type: "integer"
-          format: "int32"  
+          type: "number"
+          format: "float"
+          example: 93.25
         algo_version:
           type: "string"
           example: "4.0.0"
